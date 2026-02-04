@@ -3,8 +3,7 @@
 # A-RAG: Scaling Agentic Retrieval-Augmented Generation via Hierarchical Retrieval Interfaces
 
 <a href="https://arxiv.org/abs/2602.03442"><img src="https://img.shields.io/badge/arXiv-2602.03442-b31b1b.svg" alt="arXiv"></a>
-<a href="http://localhost:8080/agents/a-rag/index.html#home"><img src="https://img.shields.io/badge/Website-A--RAG-blue" alt="Website"></a>
-<a href="https://github.com/Ayanami0730/arag"><img src="https://img.shields.io/badge/GitHub-arag-green" alt="GitHub"></a>
+<a href="https://agentresearchlab.org/agents/a-rag/index.html#home"><img src="https://img.shields.io/badge/Website-A--RAG-blue" alt="Website"></a>
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 
 **If you find our project helpful, please give us a star ⭐ on GitHub!**
@@ -36,19 +35,34 @@ Contributions and feedback are welcome!
 
 ## 📖 Overview
 
-<div align="center">
-<img src="assets/Framework.png" alt="A-RAG Framework" width="800">
-
-*Overview of A-RAG framework. The agent iteratively uses hierarchical retrieval tools (keyword search, semantic search, chunk read) to gather information from the corpus and autonomously decides when to provide the final answer.*
-</div>
-
 Frontier language models have demonstrated strong reasoning and long-horizon tool-use capabilities. However, existing RAG systems fail to leverage these capabilities. They still rely on two paradigms:
-1. Designing an algorithm that retrieves passages in a single shot and concatenates them into the model's input
-2. Predefining a workflow and prompting the model to execute it step-by-step
+1. **Graph RAG**: Designing an algorithm that retrieves passages in a single shot and concatenates them into the model's input
+2. **Workflow RAG**: Predefining a workflow and prompting the model to execute it step-by-step
 
 Neither paradigm allows the model to participate in retrieval decisions, preventing efficient scaling with model improvements.
 
+### Three Principles of Agentic RAG
+
+We identify three key principles that define true agentic autonomy:
+- **Autonomous Strategy**: The agent dynamically chooses retrieval strategies based on task characteristics
+- **Iterative Execution**: The agent supports multi-round execution, adapting based on intermediate results
+- **Interleaved Tool Use**: The agent follows a ReAct-like action→observation→reasoning loop
+
+<div align="center">
+<img src="assets/three-paradigms.png" alt="Three Paradigms Comparison" width="800">
+
+*Comparison of three RAG paradigms. Only A-RAG satisfies all three principles, making it a truly agentic framework.*
+</div>
+
+### Our Solution: A-RAG
+
 **A-RAG** is an **A**gentic **RAG** framework that exposes **hierarchical retrieval interfaces** directly to the model. A-RAG provides three retrieval tools: `keyword_search`, `semantic_search`, and `chunk_read`, enabling the agent to adaptively search and retrieve information across multiple granularities.
+
+<div align="center">
+<img src="assets/Framework.png" alt="A-RAG Framework" width="800">
+
+*Overview of A-RAG framework. The agent iteratively uses hierarchical retrieval tools to gather information from the corpus and autonomously decides when to provide the final answer.*
+</div>
 
 ### Key Features
 
@@ -56,14 +70,6 @@ Neither paradigm allows the model to participate in retrieval decisions, prevent
 - 🤖 **True Agentic Autonomy**: Autonomous strategy, iterative execution, and interleaved tool use
 - 📈 **Test-Time Scaling**: Performance improves with increased compute resources
 - ⚡ **Context Efficient**: Achieves superior accuracy with comparable or fewer retrieved tokens
-
-### Three Principles of Agentic RAG
-
-<div align="center">
-<img src="assets/three-paradigms.png" alt="Three Paradigms Comparison" width="800">
-
-*Comparison of three paradigms. We identify three principles of agentic autonomy: Autonomous Strategy, Iterative Execution, and Interleaved Tool Use. Only A-RAG satisfies all three, making it a truly agentic framework.*
-</div>
 
 ---
 
@@ -108,16 +114,6 @@ Results (%) of baselines and A-RAG on benchmark datasets in terms of **LLM-Evalu
 | **A-RAG (Ours)** |||||||||
 | A-RAG (Naive) | <u>66.2</u> | <u>59.7</u> | <u>90.8</u> | <u>85.3</u> | 70.6 | 76.9 | <u>92.7</u> | 80.4 |
 | A-RAG (Full) | **74.1** | **65.3** | **94.5** | **88.0** | **89.7** | **88.9** | **93.1** | **85.3** |
-
-### Ablation Study (GPT-5-mini)
-
-| Method | MuSiQue |  | HotpotQA |  | 2Wiki |  | Med. | Novel |
-|--------|:-------:|:----:|:--------:|:----:|:-----:|:----:|:----:|:-----:|
-|        | LLM | Cont | LLM | Cont | LLM | Cont | LLM | LLM |
-| A-RAG (Full) | **74.1** | 65.3 | **94.5** | 88.0 | **89.7** | **88.9** | 93.1 | **85.3** |
-| w/o KW Search | 72.6 | 65.3 | 93.0 | 87.4 | 88.9 | 88.1 | 93.2 | 85.0 |
-| w/o Semantic | 69.4 | 63.3 | 93.9 | 88.4 | 89.1 | 88.0 | 92.1 | 85.2 |
-| w/o Chunk Read | 73.6 | **67.0** | 93.6 | **88.8** | 89.0 | 87.9 | **93.3** | 85.1 |
 
 ---
 
@@ -417,6 +413,6 @@ MIT License
 
 <div align="center">
 
-**[Paper](https://arxiv.org/abs/2602.03442)** | **[Website](http://localhost:8080/agents/a-rag/index.html#home)** | **[GitHub](https://github.com/Ayanami0730/arag)**
+**[Paper](https://arxiv.org/abs/2602.03442)** | **[Website](https://agentresearchlab.org/agents/a-rag/index.html#home)** | **[GitHub](https://github.com/Ayanami0730/arag)**
 
 </div>
