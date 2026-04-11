@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "ARAG - Agentic Retrieval-Augmented Generation Framework"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [
     {name = "Ayanami0730", email = "ayanami0730@gmail.com"}
 ]
@@ -54,7 +54,10 @@ include = ["src/arag"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = ["UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

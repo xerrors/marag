@@ -1,7 +1,7 @@
 """LLM client for ARAG - unified interface for OpenAI-compatible APIs."""
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 import tiktoken
@@ -9,7 +9,7 @@ import tiktoken
 
 class LLMClient:
     """Unified LLM client for OpenAI-compatible APIs."""
-    
+
     # Official pricing (USD per 1M tokens): (input, cached_input, output)
     PRICING = {
         # OpenAI GPT-5 series
@@ -53,7 +53,7 @@ class LLMClient:
         # Default fallback
         "default": (1.0, 0.1, 5.0),
     }
-    
+
     def __init__(
         self,
         model: str = None,
@@ -65,23 +65,27 @@ class LLMClient:
     ):
         self.model = model or os.getenv("ARAG_MODEL", "gpt-4o-mini")
         self.api_key = api_key or os.getenv("ARAG_API_KEY")
-        self.base_url = (base_url or os.getenv("ARAG_BASE_URL", "https://api.openai.com/v1")).rstrip('/')
+        self.base_url = (
+            base_url or os.getenv("ARAG_BASE_URL", "https://api.openai.com/v1")
+        ).rstrip("/")
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.reasoning_effort = reasoning_effort
-        
+
         if not self.api_key:
-            raise ValueError("API key required. Set ARAG_API_KEY environment variable or pass api_key parameter.")
-        
+            raise ValueError(
+                "API key required. Set ARAG_API_KEY environment variable or pass api_key parameter."
+            )
+
         try:
             self.tokenizer = tiktoken.encoding_for_model("gpt-4o")
         except Exception:
             self.tokenizer = tiktoken.get_encoding("cl100k_base")
-    
+
     def count_tokens(self, text: str) -> int:
         return len(self.tokenizer.encode(text))
-    
-    def count_message_tokens(self, messages: List[Dict[str, Any]]) -> int:
+
+    def count_message_tokens(self, messages: list[dict[str, Any]]) -> int:
         total = 0
         for msg in messages:
             total += 4
@@ -96,17 +100,17 @@ class LLMClient:
                 for tc in msg["tool_calls"]:
                     total += self.count_tokens(str(tc.get("function", {})))
         return total
-    
+
     def calculate_cost(self, usage: dict) -> float:
         """Calculate API cost from usage info."""
         model_lower = self.model.lower()
-        
-        prompt_tokens = usage.get('prompt_tokens', 0)
-        completion_tokens = usage.get('completion_tokens', 0)
-        prompt_details = usage.get('prompt_tokens_details', {}) or {}
-        cached_tokens = prompt_details.get('cached_tokens', 0)
+
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("completion_tokens", 0)
+        prompt_details = usage.get("prompt_tokens_details", {}) or {}
+        cached_tokens = prompt_details.get("cached_tokens", 0)
         input_tokens = max(prompt_tokens - cached_tokens, 0)
-        
+
         # Find matching pricing
         for key in self.PRICING:
             if key in model_lower:
@@ -114,22 +118,22 @@ class LLMClient:
                 break
         else:
             input_price, cached_price, output_price = self.PRICING["default"]
-        
+
         usd_cost = (
-            (input_tokens / 1_000_000) * input_price +
-            (cached_tokens / 1_000_000) * cached_price +
-            (completion_tokens / 1_000_000) * output_price
+            (input_tokens / 1_000_000) * input_price
+            + (cached_tokens / 1_000_000) * cached_price
+            + (completion_tokens / 1_000_000) * output_price
         )
-        
+
         return round(usd_cost, 6)
-    
+
     def chat(
         self,
-        messages: List[Dict[str, Any]],
-        tools: List[Dict[str, Any]] = None,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] = None,
         temperature: float = None,
         max_tokens: int = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         url = f"{self.base_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -146,13 +150,13 @@ class LLMClient:
             payload["tool_choice"] = "auto"
         if self.reasoning_effort:
             payload["reasoning_effort"] = self.reasoning_effort
-        
+
         response = requests.post(url, headers=headers, json=payload, timeout=300)
         response.raise_for_status()
         result = response.json()
-        
+
         usage = result.get("usage", {})
-        
+
         return {
             "message": result["choices"][0]["message"],
             "input_tokens": usage.get("prompt_tokens", 0),
@@ -160,19 +164,19 @@ class LLMClient:
             "cost": self.calculate_cost(usage),
             "raw_response": result,
         }
-    
+
     def generate(
         self,
-        messages: List[Dict[str, Any]],
+        messages: list[dict[str, Any]],
         system: str = None,
-        tools: List[Dict[str, Any]] = None,
+        tools: list[dict[str, Any]] = None,
         temperature: float = None,
-        **kwargs
+        **kwargs,
     ) -> tuple:
         """Generate response (compatibility method for eval script)."""
         if system:
             messages = [{"role": "system", "content": system}] + messages
-        
+
         result = self.chat(messages=messages, tools=tools, temperature=temperature)
         content = result["message"].get("content", "")
         cost = result["cost"]

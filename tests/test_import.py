@@ -3,6 +3,7 @@
 
 def test_import_arag():
     import arag
+
     assert hasattr(arag, "__version__")
 
 
@@ -26,6 +27,7 @@ def test_import_tools():
 
 def test_import_agent():
     from arag.agent.base import BaseAgent
+
     assert BaseAgent is not None
 
 

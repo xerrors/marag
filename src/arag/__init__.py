@@ -11,7 +11,7 @@ from arag.tools.registry import ToolRegistry
 
 __all__ = [
     "Config",
-    "AgentContext", 
+    "AgentContext",
     "LLMClient",
     "BaseAgent",
     "BaseTool",
