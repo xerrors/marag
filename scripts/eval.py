@@ -4,6 +4,7 @@ Evaluation script for ARAG predictions.
 
 Usage:
     python scripts/eval.py \
+        --config configs/local.toml \
         --predictions results/predictions.jsonl \
         --workers 10
 """
@@ -17,7 +18,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
-from arag import LLMClient
+from arag import Config, LLMClient, resolve_llm_profile
 
 logger = logging.getLogger(__name__)
 
@@ -273,12 +274,9 @@ Response:"""
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate ARAG predictions")
-    parser.add_argument(
-        "--predictions", "-p", required=True, help="Predictions file path (.json or .jsonl)"
-    )
-    parser.add_argument(
-        "--workers", "-w", type=int, default=10, help="Number of concurrent workers"
-    )
+    parser.add_argument("--config", "-c", default="configs/local.toml", help="Config file path")
+    parser.add_argument("--predictions", "-p", required=True, help="Predictions file path (.json or .jsonl)")
+    parser.add_argument("--workers", "-w", type=int, default=10, help="Number of concurrent workers")
     parser.add_argument("--output", "-o", type=str, default=None, help="Output directory")
 
     args = parser.parse_args()
@@ -288,16 +286,14 @@ def main():
     print(f"\n{'=' * 60}")
     print("ARAG Evaluation")
     print(f"{'=' * 60}")
+    print(f"Config:      {args.config}")
     print(f"Predictions: {args.predictions}")
-    print(f"Workers: {args.workers}")
+    print(f"Workers:     {args.workers}")
     print(f"{'=' * 60}\n")
 
-    # Create LLM client from environment variables
-    llm_client = LLMClient(
-        model=os.getenv("ARAG_MODEL", "gpt-4o-mini"),
-        api_key=os.getenv("ARAG_API_KEY"),
-        base_url=os.getenv("ARAG_BASE_URL", "https://api.openai.com/v1"),
-    )
+    # Build the judge LLM from the EVAL_MODEL profile in the config.
+    config = Config.from_file(args.config)
+    llm_client = LLMClient(**resolve_llm_profile(config, role="eval"))
 
     evaluator = Evaluator(llm_client, args.predictions)
     llm_acc, contain_acc = evaluator.evaluate(max_workers=args.workers, output_dir=args.output)

@@ -33,20 +33,28 @@ uv run python scripts/build_index.py \
     --model Qwen/Qwen3-Embedding-0.6B \
     --device cuda:0
 
-# 4. Set environment variables
-export ARAG_API_KEY="your-api-key"
-export ARAG_BASE_URL="https://api.openai.com/v1"
-export ARAG_MODEL="gpt-5-mini"
+# 4. Configure models
+#    Copy .env.example to .env and fill in the API key + profile selectors.
+#    LLM profiles are defined in configs/local.toml under [llm.<name>].
+cp .env.example .env
+#    Then edit .env:
+#      OPENAI_API_KEY=sk-...
+#      RAG_MODEL=gpt-5-mini      # profile used by the agent
+#      EVAL_MODEL=gpt-4o         # profile used by the evaluator
+#
+#    Datasets live under [data.<name>] in configs/local.toml. Each section
+#    holds chunks_file / questions_file / index_dir / output_dir for that
+#    dataset — add or edit sections for the splits you want to run.
 
 # 5. Run A-RAG agent
 uv run python scripts/batch_runner.py \
-    --config configs/example.yaml \
-    --questions data/musique/questions.json \
-    --output results/musique \
+    --config configs/local.toml \
+    --dataset musique \
     --limit 10 --workers 5
 
 # 6. Evaluate results
 uv run python scripts/eval.py \
+    --config configs/local.toml \
     --predictions results/musique/predictions.jsonl \
     --workers 5
 ```
@@ -226,7 +234,17 @@ Prepare your own corpus as a JSON file:
 <details>
 <summary>Click to expand full evaluation instructions</summary>
 
-#### 1. Build Index
+#### 1. Download the Dataset
+
+```bash
+git clone https://huggingface.co/datasets/Ayanami0730/rag_test data --depth 1
+rm -rf data/.git data/README.md
+```
+
+This puts each split under `data/<split>/` (e.g. `data/musique/chunks.json`,
+`data/musique/questions.json`).
+
+#### 2. Build Index
 
 ```bash
 # Using HuggingFace model (auto-download)
@@ -244,48 +262,37 @@ uv run python scripts/build_index.py \
     --device cuda:0
 ```
 
-#### 2. Create Config File
+#### 3. Add a Dataset Section
 
-Create `configs/test_musique.yaml`:
+Datasets are defined under `[data.<name>]` in the config. `configs/local.toml`
+ships with `musique` and `hotpotqa` examples — add your own for new splits:
 
-```yaml
-llm:
-  temperature: 0.0
-  max_tokens: 16384
-  reasoning_effort: "medium"
-
-embedding:
-  model: "Qwen/Qwen3-Embedding-0.6B"  # or local path
-  device: "cuda:0"
-  batch_size: 16
-
-agent:
-  max_loops: 15
-  max_token_budget: 128000
-  verbose: false
-
-data:
-  chunks_file: "data/musique/chunks.json"
-  index_dir: "data/musique/index"
+```toml
+[data.musique]
+chunks_file = "data/musique/chunks.json"
+questions_file = "data/musique/questions.json"
+index_dir = "data/musique/index"
+output_dir = "results/musique"
 ```
 
-#### 3. Run Full Benchmark
+#### 4. Run Full Benchmark
 
 ```bash
-export ARAG_API_KEY="your-api-key"
-export ARAG_BASE_URL="https://api.openai.com/v1"
-export ARAG_MODEL="gpt-5-mini"
+# .env (keys + profile selection)
+export OPENAI_API_KEY="your-api-key"
+export RAG_MODEL="gpt-5-mini"
+export EVAL_MODEL="gpt-4o"
 export CUDA_VISIBLE_DEVICES=0
 
-# Run all questions
+# --dataset picks the [data.<name>] section in the config.
 uv run python scripts/batch_runner.py \
-    --config configs/test_musique.yaml \
-    --questions data/musique/questions.json \
-    --output results/musique \
+    --config configs/local.toml \
+    --dataset musique \
     --workers 10
 
 # Evaluate
 uv run python scripts/eval.py \
+    --config configs/local.toml \
     --predictions results/musique/predictions.jsonl \
     --workers 10
 ```

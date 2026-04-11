@@ -1,6 +1,7 @@
 """LLM client for ARAG - unified interface for OpenAI-compatible APIs."""
 
-import os
+from __future__ import annotations
+
 from typing import Any
 
 import requests
@@ -56,26 +57,19 @@ class LLMClient:
 
     def __init__(
         self,
-        model: str = None,
-        api_key: str = None,
-        base_url: str = None,
+        model: str,
+        api_key: str,
+        base_url: str = "https://api.openai.com/v1",
         temperature: float = 0.0,
         max_tokens: int = 16384,
-        reasoning_effort: str = None,
+        reasoning_effort: str | None = None,
     ):
-        self.model = model or os.getenv("ARAG_MODEL", "gpt-4o-mini")
-        self.api_key = api_key or os.getenv("ARAG_API_KEY")
-        self.base_url = (
-            base_url or os.getenv("ARAG_BASE_URL", "https://api.openai.com/v1")
-        ).rstrip("/")
+        self.model = model
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.reasoning_effort = reasoning_effort
-
-        if not self.api_key:
-            raise ValueError(
-                "API key required. Set ARAG_API_KEY environment variable or pass api_key parameter."
-            )
 
         try:
             self.tokenizer = tiktoken.encoding_for_model("gpt-4o")

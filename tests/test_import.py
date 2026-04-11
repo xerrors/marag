@@ -59,9 +59,16 @@ def test_tool_registry():
 
 
 def test_config_basic():
+    import pytest
+
     from arag.core.config import Config
 
-    cfg = Config({"llm": {"model": "test", "temperature": 0.5}})
-    assert cfg.get("llm.model") == "test"
-    assert cfg.get("llm.temperature") == 0.5
-    assert cfg.get("llm.missing", "default") == "default"
+    cfg = Config({"llm": {"gpt": {"model": "test", "temperature": 0.5}}})
+
+    assert cfg["llm"]["gpt"]["model"] == "test"
+    assert cfg["llm"]["gpt"]["temperature"] == 0.5
+    assert cfg["llm"]["gpt"].get("missing", "default") == "default"
+    assert "llm" in cfg
+
+    with pytest.raises(KeyError):
+        _ = cfg["llm"]["gpt"]["missing"]

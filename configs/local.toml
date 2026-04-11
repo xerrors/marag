@@ -1,0 +1,80 @@
+# ARAG configuration (TOML).
+#
+# Model management
+# ----------------
+# Define one LLM "profile" per backend you want to use under [llm.<profile>].
+# Select which profile the runtime uses via environment variables:
+#
+#   RAG_MODEL   -> profile used by the ARAG agent (batch_runner.py)
+#   EVAL_MODEL  -> profile used by the LLM-judge evaluator (eval.py)
+#
+# API keys are NOT stored here. Each profile's `api_key_env` field names an
+# environment variable that holds the real key (keep those in .env).
+#
+# Datasets
+# --------
+# Each dataset lives under [data.<name>]. Select one at runtime with
+# `--dataset <name>`; the runner reads chunks / questions / index / output
+# paths straight from that section.
+
+# -----------------------------------------------------------------------------
+# LLM profiles
+# -----------------------------------------------------------------------------
+
+[llm.gpt-5-mini]
+model = "gpt-5-mini"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+temperature = 0.0
+max_tokens = 16384
+reasoning_effort = "medium"
+
+[llm.gpt-4o]
+model = "gpt-4o"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+temperature = 0.0
+max_tokens = 16384
+
+[llm.gpt-4o-mini]
+model = "gpt-4o-mini"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+temperature = 0.0
+max_tokens = 16384
+
+[llm.claude-sonnet]
+model = "claude-4.5-sonnet"
+base_url = "https://api.anthropic.com/v1"
+api_key_env = "ANTHROPIC_API_KEY"
+
+# -----------------------------------------------------------------------------
+# Embedding / agent
+# -----------------------------------------------------------------------------
+
+[embedding]
+# HuggingFace model name or local path (we use Qwen3-Embedding-0.6B in the paper)
+model = "Qwen/Qwen3-Embedding-0.6B"
+device = "cuda:0"  # or "cpu"
+batch_size = 16
+
+[agent]
+max_loops = 15
+max_token_budget = 128000
+verbose = false
+
+# -----------------------------------------------------------------------------
+# Datasets — add one section per dataset you want to run
+# -----------------------------------------------------------------------------
+
+[data.musique]
+chunks_file = "data/musique/chunks.json"
+questions_file = "data/musique/questions.json"
+index_dir = "data/musique/index"
+output_dir = "results/musique"
+
+[data.hotpotqa]
+chunks_file = "data/hotpotqa/chunks.json"
+questions_file = "data/hotpotqa/questions.json"
+index_dir = "data/hotpotqa/index"
+output_dir = "results/hotpotqa"

@@ -4,12 +4,10 @@ Batch Runner for ARAG - Supports concurrent execution and checkpoint resume.
 
 Usage:
     python scripts/batch_runner.py \
-        --config configs/example.yaml \
-        --questions data/questions.json \
-        --output results/
+        --config configs/local.toml \
+        --dataset musique
 """
 
-import os
 import json
 import argparse
 import logging
@@ -19,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from tqdm import tqdm
-from arag import LLMClient, BaseAgent, ToolRegistry, Config
+from arag import BaseAgent, Config, LLMClient, ToolRegistry, resolve_llm_profile
 from arag.tools.keyword_search import KeywordSearchTool
 from arag.tools.semantic_search import SemanticSearchTool
 from arag.tools.read_chunk import ReadChunkTool
@@ -33,15 +31,15 @@ class BatchRunner:
     def __init__(
         self,
         config: Config,
-        questions_file: str,
-        output_dir: str,
-        limit: int = None,
+        dataset: str,
+        limit: int | None = None,
         num_workers: int = 10,
         verbose: bool = False,
     ):
         self.config = config
-        self.questions_file = Path(questions_file)
-        self.output_dir = Path(output_dir)
+        self.data = config["data"][dataset]
+
+        self.output_dir = Path(self.data["output_dir"])
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.limit = limit
         self.num_workers = num_workers
@@ -64,9 +62,8 @@ class BatchRunner:
 
     def _init_shared_tools(self) -> ToolRegistry:
         """Initialize shared tools (embedding model loaded only once)."""
-        data_config = self.config.get("data", {})
-        chunks_file = data_config.get("chunks_file", "data/chunks.json")
-        index_dir = data_config.get("index_dir", "data/index")
+        chunks_file = self.data["chunks_file"]
+        index_dir = self.data["index_dir"]
 
         tools = ToolRegistry()
         tools.register(KeywordSearchTool(chunks_file=chunks_file))
@@ -75,18 +72,14 @@ class BatchRunner:
         # Add semantic search if index exists
         index_file = Path(index_dir) / "sentence_index.pkl"
         if index_file.exists():
-            embedding_config = self.config.get("embedding", {})
-            print(
-                f"Loading embedding model: {embedding_config.get('model', 'sentence-transformers/all-MiniLM-L6-v2')}"
-            )
+            embedding = self.config["embedding"]
+            print(f"Loading embedding model: {embedding['model']}")
             tools.register(
                 SemanticSearchTool(
                     chunks_file=chunks_file,
                     index_dir=index_dir,
-                    model_name=embedding_config.get(
-                        "model", "sentence-transformers/all-MiniLM-L6-v2"
-                    ),
-                    device=embedding_config.get("device"),
+                    model_name=embedding["model"],
+                    device=embedding.get("device"),
                 )
             )
             print("Embedding model loaded successfully!")
@@ -97,7 +90,7 @@ class BatchRunner:
 
     def _load_questions(self) -> list[dict[str, Any]]:
         """Load questions from file."""
-        with open(self.questions_file, encoding="utf-8") as f:
+        with open(Path(self.data["questions_file"]), encoding="utf-8") as f:
             questions = json.load(f)
 
         if self.limit:
@@ -139,17 +132,9 @@ class BatchRunner:
 
     def _create_agent(self) -> BaseAgent:
         """Create agent instance with shared tools."""
-        llm_config = self.config.get("llm", {})
+        client = LLMClient(**resolve_llm_profile(self.config, role="rag"))
 
-        client = LLMClient(
-            model=llm_config.get("model") or os.getenv("ARAG_MODEL", "gpt-4o-mini"),
-            api_key=llm_config.get("api_key") or os.getenv("ARAG_API_KEY"),
-            base_url=llm_config.get("base_url")
-            or os.getenv("ARAG_BASE_URL", "https://api.openai.com/v1"),
-            reasoning_effort=llm_config.get("reasoning_effort"),
-        )
-
-        agent_config = self.config.get("agent", {})
+        agent_config = self.config["agent"]
 
         return BaseAgent(
             llm_client=client,
@@ -238,21 +223,19 @@ class BatchRunner:
 
 def main():
     parser = argparse.ArgumentParser(description="ARAG Batch Runner")
-    parser.add_argument("--config", "-c", required=True, help="Config file path")
-    parser.add_argument("--questions", "-q", required=True, help="Questions file path")
-    parser.add_argument("--output", "-o", required=True, help="Output directory")
+    parser.add_argument("--config", "-c", default="configs/local.toml", help="Config file path")
+    parser.add_argument("--dataset", "-d", default="demo", help="Dataset name")
     parser.add_argument("--limit", "-l", type=int, default=None, help="Limit number of questions")
     parser.add_argument("--workers", "-w", type=int, default=10, help="Number of workers")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
-    config = Config.from_yaml(args.config)
+    config = Config.from_file(args.config)
 
     runner = BatchRunner(
         config=config,
-        questions_file=args.questions,
-        output_dir=args.output,
+        dataset=args.dataset,
         limit=args.limit,
         num_workers=args.workers,
         verbose=args.verbose,
