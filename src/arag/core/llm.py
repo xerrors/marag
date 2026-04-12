@@ -51,6 +51,10 @@ class LLMClient:
         "gemini-2.0-flash": (0.1, 0.025, 0.4),
         "gemini-pro": (1.25, 0.125, 5.0),
         "gemini-flash": (0.075, 0.02, 0.3),
+        # SiliconFlow
+        "Pro/MinimaxAI/Minimax-M2.5": (0.3, 0.03, 1.4),
+        "Pro/zai-org/GLM-5.1": (0.85, 0.18, 3.4),
+        "Pro/deepseek-ai/DeepSeek-V3.2": (0.25, 0.025, 0.375),
         # Default fallback
         "default": (1.0, 0.1, 5.0),
     }

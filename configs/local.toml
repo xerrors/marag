@@ -23,7 +23,7 @@
 
 [llm.gpt-5-mini]
 model = "gpt-5-mini"
-base_url = "https://api.openai.com/v1"
+base_url = "https://yunwu.ai/v1"
 api_key_env = "OPENAI_API_KEY"
 temperature = 0.0
 max_tokens = 16384
@@ -31,14 +31,14 @@ reasoning_effort = "medium"
 
 [llm.gpt-4o]
 model = "gpt-4o"
-base_url = "https://api.openai.com/v1"
+base_url = "https://yunwu.ai/v1"
 api_key_env = "OPENAI_API_KEY"
 temperature = 0.0
 max_tokens = 16384
 
 [llm.gpt-4o-mini]
 model = "gpt-4o-mini"
-base_url = "https://api.openai.com/v1"
+base_url = "https://yunwu.ai/v1"
 api_key_env = "OPENAI_API_KEY"
 temperature = 0.0
 max_tokens = 16384
@@ -47,6 +47,13 @@ max_tokens = 16384
 model = "claude-4.5-sonnet"
 base_url = "https://api.anthropic.com/v1"
 api_key_env = "ANTHROPIC_API_KEY"
+
+[llm.siliconflow]
+model = "Pro/MiniMaxAI/MiniMax-M2.5"
+base_url = "https://api.siliconflow.cn/v1"
+api_key_env = "SILICONFLOW_API_KEY"
+temperature = 0.3
+max_tokens = 160000
 
 # -----------------------------------------------------------------------------
 # Embedding / agent
@@ -78,3 +85,9 @@ chunks_file = "data/hotpotqa/chunks.json"
 questions_file = "data/hotpotqa/questions.json"
 index_dir = "data/hotpotqa/index"
 output_dir = "results/hotpotqa"
+
+[data.demo]
+chunks_file = "data/demo/chunks.json"
+questions_file = "data/demo/questions.json"
+index_dir = "data/demo/index"
+output_dir = "results/demo"

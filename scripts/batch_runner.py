@@ -16,7 +16,7 @@ from threading import Lock
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
-from tqdm import tqdm
+from rich.progress import track
 from arag import BaseAgent, Config, LLMClient, ToolRegistry, resolve_llm_profile
 from arag.tools.keyword_search import KeywordSearchTool
 from arag.tools.semantic_search import SemanticSearchTool
@@ -208,15 +208,13 @@ class BatchRunner:
                 future = executor.submit(self._process_one, item, agent)
                 futures[future] = item.get("qid") or item.get("id")
 
-            with tqdm(total=len(pending), desc="Processing") as pbar:
-                for future in as_completed(futures):
-                    qid = futures[future]
-                    try:
-                        result = future.result()
-                        self._append_prediction(result)
-                    except Exception as e:
-                        print(f"Error processing {qid}: {e}")
-                    pbar.update(1)
+            for future in track(as_completed(futures), total=len(pending), description="Processing questions"):
+                qid = futures[future]
+                try:
+                    result = future.result()
+                    self._append_prediction(result)
+                except Exception as e:
+                    print(f"Error processing {qid}: {e}")
 
         print(f"\nResults saved to: {self.predictions_file}")
 
@@ -225,7 +223,7 @@ def main():
     parser = argparse.ArgumentParser(description="ARAG Batch Runner")
     parser.add_argument("--config", "-c", default="configs/local.toml", help="Config file path")
     parser.add_argument("--dataset", "-d", default="demo", help="Dataset name")
-    parser.add_argument("--limit", "-l", type=int, default=None, help="Limit number of questions")
+    parser.add_argument("--limit", "-l", type=int, default=0, help="Limit number of questions")
     parser.add_argument("--workers", "-w", type=int, default=10, help="Number of workers")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 

@@ -16,7 +16,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from tqdm import tqdm
+from rich.progress import track
 
 
 def split_sentences(text: str) -> list[str]:
@@ -61,7 +61,7 @@ def build_index(
     sentences = []
     sentence_to_chunk = []
 
-    for chunk in tqdm(chunks, desc="Processing chunks"):
+    for chunk in track(chunks, description="Extracting sentences"):
         chunk_sentences = split_sentences(chunk["text"])
         for sent in chunk_sentences:
             sentences.append(sent)
@@ -105,22 +105,25 @@ def build_index(
 
 def main():
     parser = argparse.ArgumentParser(description="Build semantic search index")
-    parser.add_argument("--chunks", "-c", required=True, help="Path to chunks.json")
-    parser.add_argument("--output", "-o", required=True, help="Output directory for index")
+    parser.add_argument("--dataset", "-d", default="demo", help="Dataset name")
     parser.add_argument(
         "--model",
         "-m",
         default="sentence-transformers/all-MiniLM-L6-v2",
         help="Embedding model name or path",
     )
-    parser.add_argument("--device", "-d", default=None, help="Device (cuda:0, cpu, etc.)")
+    parser.add_argument("--device", default=None, help="Device (cuda:0, cpu, etc.)")
     parser.add_argument("--batch-size", "-b", type=int, default=32, help="Batch size")
 
     args = parser.parse_args()
 
+    from arag import Config
+    config = Config.from_file("configs/local.toml")
+    data = config["data"][args.dataset]
+
     build_index(
-        chunks_file=args.chunks,
-        output_dir=args.output,
+        chunks_file=data["chunks_file"],
+        output_dir=data["index_dir"],
         model_name=args.model,
         device=args.device,
         batch_size=args.batch_size,
