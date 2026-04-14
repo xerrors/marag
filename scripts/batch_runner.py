@@ -11,18 +11,30 @@ Usage:
 import json
 import argparse
 import logging
+import os
+import re
 from pathlib import Path
 from threading import Lock
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
-from rich.progress import track
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 from arag import BaseAgent, Config, LLMClient, ToolRegistry, resolve_llm_profile
 from arag.tools.keyword_search import KeywordSearchTool
 from arag.tools.semantic_search import SemanticSearchTool
 from arag.tools.read_chunk import ReadChunkTool
 
 logging.basicConfig(level=logging.ERROR)
+
+INVALID_CLOSING_TAG_RE = re.compile(r"</[^>]+>")
 
 
 class BatchRunner:
@@ -39,7 +51,11 @@ class BatchRunner:
         self.config = config
         self.data = config["data"][dataset]
 
-        self.output_dir = Path(self.data["output_dir"])
+        output_name = os.environ.get("RAG_MODEL", "default")
+        output_suffix = os.environ.get("ARAG_OUTPUT_SUFFIX", "").strip()
+        if output_suffix:
+            output_name = f"{output_name}-{output_suffix}"
+        self.output_dir = Path(self.data["output_dir"]) / output_name
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.limit = limit
         self.num_workers = num_workers
@@ -101,6 +117,8 @@ class BatchRunner:
     def _load_completed_qids(self) -> set:
         """Load completed question IDs for checkpoint resume."""
         completed_qids = set()
+        kept_lines = []
+        dirty = False
 
         if not self.predictions_file.exists():
             return completed_qids
@@ -110,22 +128,64 @@ class BatchRunner:
                 for line in f:
                     line = line.strip()
                     if not line:
+                        dirty = True
                         continue
                     try:
                         data = json.loads(line)
-                        if "question" in data and "pred_answer" in data:
-                            qid = data.get("qid") or data.get("id")
-                            if qid is not None:
-                                completed_qids.add(qid)
+                        if not self._is_completed_prediction(data):
+                            dirty = True
+                            continue
+
+                        kept_lines.append(json.dumps(data, ensure_ascii=False))
+                        qid = data.get("qid") or data.get("id")
+                        if qid is not None:
+                            completed_qids.add(qid)
                     except json.JSONDecodeError:
+                        dirty = True
                         continue
         except Exception as e:
             print(f"Warning: Error loading completed data: {e}")
 
+        if dirty:
+            content = "\n".join(kept_lines)
+            if content:
+                content += "\n"
+            with open(self.predictions_file, "w", encoding="utf-8") as f:
+                f.write(content)
+
         return completed_qids
+
+    def _is_completed_prediction(self, prediction: dict[str, Any]) -> bool:
+        """Return True only for predictions that should be skipped on resume."""
+        if "question" not in prediction:
+            return False
+
+        pred_answer = prediction.get("pred_answer")
+        if not isinstance(pred_answer, str):
+            return False
+
+        pred_answer = pred_answer.strip()
+        if not pred_answer:
+            return False
+        if pred_answer.startswith("Error:"):
+            return False
+        if "tool_call" in pred_answer:
+            return False
+        if INVALID_CLOSING_TAG_RE.search(pred_answer):
+            return False
+
+        # Additional validity checks: ensure pred_answer is a meaningful non-empty string
+        if len(pred_answer) < 2:
+            return False
+
+        return True
 
     def _append_prediction(self, prediction: dict[str, Any]):
         """Append prediction to file (thread-safe)."""
+        pred_answer = prediction.get("pred_answer", "")
+        if isinstance(pred_answer, str) and pred_answer.startswith("Error:"):
+            return
+
         with self.write_lock:
             with open(self.predictions_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(prediction, ensure_ascii=False) + "\n")
@@ -208,13 +268,25 @@ class BatchRunner:
                 future = executor.submit(self._process_one, item, agent)
                 futures[future] = item.get("qid") or item.get("id")
 
-            for future in track(as_completed(futures), total=len(pending), description="Processing questions"):
-                qid = futures[future]
-                try:
-                    result = future.result()
-                    self._append_prediction(result)
-                except Exception as e:
-                    print(f"Error processing {qid}: {e}")
+            with Progress(
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                TimeRemainingColumn(),
+            ) as progress:
+                task_id = progress.add_task("Run", total=len(pending))
+
+                for future in as_completed(futures):
+                    qid = futures[future]
+                    try:
+                        result = future.result()
+                        self._append_prediction(result)
+                    except Exception as e:
+                        print(f"Error processing {qid}: {e}")
+                    finally:
+                        progress.advance(task_id)
 
         print(f"\nResults saved to: {self.predictions_file}")
 

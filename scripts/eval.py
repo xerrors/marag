@@ -9,6 +9,7 @@ Usage:
         --workers 10
 """
 
+from datetime import datetime
 import os
 import json
 import re
@@ -70,6 +71,9 @@ class Evaluator:
 
     def calculate_llm_accuracy(self, pred_answer, gold_answer):
         """Use LLM to judge if prediction is correct."""
+        if self.llm_client is None:
+            return 0.0
+
         system_prompt = "You are an expert evaluator."
         user_prompt = f"""Please evaluate if the generated answer is correct by comparing it with the gold answer.
 Generated answer: {pred_answer}
@@ -144,7 +148,7 @@ Response:"""
             total_llm_score = 0.0
             total_contain_score = 0.0
             answered_count = 0
-            pbar = tqdm(total=len(futures), desc="Evaluating", unit="sample")
+            pbar = tqdm(total=len(futures), desc="Eval", unit="s")
 
             for future in as_completed(futures):
                 idx, llm_acc, contain_acc, status = future.result()
@@ -237,17 +241,20 @@ Response:"""
                 json.dump(self.prediction_results, f, ensure_ascii=False, indent=4)
 
         # Save summary
+        eval_model = (os.environ.get("EVAL_MODEL") or "contain_only").replace("/", "_")
+        summary_appendix = f"eval_summary_{eval_model}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
         if base_name.endswith(".jsonl"):
-            summary_name = base_name.replace(".jsonl", "_eval_summary.json")
+            summary_name = base_name.replace(".jsonl", f"_{summary_appendix}")
         elif base_name.endswith(".json"):
-            summary_name = base_name.replace(".json", "_eval_summary.json")
+            summary_name = base_name.replace(".json", f"_{summary_appendix}")
         else:
-            summary_name = "eval_summary.json"
+            summary_name = summary_appendix
 
         summary_path = os.path.join(actual_output_dir, summary_name)
         with open(summary_path, "w", encoding="utf-8") as f:
             json.dump(
                 {
+                    "eval_model": eval_model,
                     "total_samples": total_samples,
                     "answered_samples": answered_samples,
                     "failed_samples": failed_samples,
@@ -289,11 +296,17 @@ def main():
     print(f"Config:      {args.config}")
     print(f"Predictions: {args.predictions}")
     print(f"Workers:     {args.workers}")
+    print(f"Output:      {args.output}")
+    print(f"Eval Model:   {os.environ.get('EVAL_MODEL', 'contain_only')}")
     print(f"{'=' * 60}\n")
 
     # Build the judge LLM from the EVAL_MODEL profile in the config.
     config = Config.from_file(args.config)
-    llm_client = LLMClient(**resolve_llm_profile(config, role="eval"))
+    if not os.environ.get("EVAL_MODEL"):
+        print("Warning: EVAL_MODEL env var is not set. LLM evaluation will be skipped.")
+        llm_client = None
+    else:
+        llm_client = LLMClient(**resolve_llm_profile(config, role="eval"))
 
     evaluator = Evaluator(llm_client, args.predictions)
     llm_acc, contain_acc = evaluator.evaluate(max_workers=args.workers, output_dir=args.output)

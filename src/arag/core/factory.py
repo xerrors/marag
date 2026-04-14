@@ -25,7 +25,7 @@ def resolve_llm_profile(config: Config, role: str = "rag") -> dict[str, Any]:
 
     profile = config["llm"][profile_name]  # KeyError gives a clear message
     api_key = os.environ.get(profile["api_key_env"])
-    assert api_key, (
+    assert api_key or profile.get("api_key_env") == "NO_API_KEY", (
         f"{profile['api_key_env']} is not set (required by LLM profile {profile_name!r})"
     )
 

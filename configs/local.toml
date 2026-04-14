@@ -43,17 +43,40 @@ api_key_env = "OPENAI_API_KEY"
 temperature = 0.0
 max_tokens = 16384
 
-[llm.claude-sonnet]
+[llm.claude-sonnet-4-5]
 model = "claude-4.5-sonnet"
 base_url = "https://api.anthropic.com/v1"
 api_key_env = "ANTHROPIC_API_KEY"
 
-[llm.siliconflow]
+[llm.minimax-m2-5]
 model = "Pro/MiniMaxAI/MiniMax-M2.5"
 base_url = "https://api.siliconflow.cn/v1"
 api_key_env = "SILICONFLOW_API_KEY"
 temperature = 0.3
-max_tokens = 160000
+max_tokens = 16384
+
+[llm.qwen2-5-32b]
+model = "qwen3:32b"
+base_url = "http://172.19.13.7:8080/v1"
+api_key_env = "NO_API_KEY"
+temperature = 0.3
+max_tokens = 8192
+
+# Qwen/Qwen3.5-35B-A3B
+[llm.qwen-3-5-35b-a3b]
+model = "Qwen/Qwen3.5-35B-A3B"
+base_url = "https://api.siliconflow.cn/v1"
+api_key_env = "SILICONFLOW_API_KEY"
+temperature = 0.3
+max_tokens = 4096
+
+[llm.debug]
+model = "Pro/zai-org/GLM-5.1"
+base_url = "https://api.siliconflow.cn/v1"
+api_key_env = "SILICONFLOW_API_KEY"
+temperature = 0.3
+max_tokens = 4096
+
 
 # -----------------------------------------------------------------------------
 # Embedding / agent
@@ -61,7 +84,7 @@ max_tokens = 160000
 
 [embedding]
 # HuggingFace model name or local path (we use Qwen3-Embedding-0.6B in the paper)
-model = "Qwen/Qwen3-Embedding-0.6B"
+model = "./models/Qwen/Qwen3-Embedding-0.6B"
 device = "cuda:0"  # or "cpu"
 batch_size = 16
 
@@ -85,6 +108,18 @@ chunks_file = "data/hotpotqa/chunks.json"
 questions_file = "data/hotpotqa/questions.json"
 index_dir = "data/hotpotqa/index"
 output_dir = "results/hotpotqa"
+
+[data.2wikimultihop]
+chunks_file = "data/2wikimultihop/chunks.json"
+questions_file = "data/2wikimultihop/questions.json"
+index_dir = "data/2wikimultihop/index"
+output_dir = "results/2wikimultihop"
+
+[data.novel]
+chunks_file = "data/novel/chunks.json"
+questions_file = "data/novel/questions.json"
+index_dir = "data/novel/index"
+output_dir = "results/novel"
 
 [data.demo]
 chunks_file = "data/demo/chunks.json"

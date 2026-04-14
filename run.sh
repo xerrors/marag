@@ -7,8 +7,7 @@ DATASET=${2:-demo}
 WORKERS=${3:-10}
 LIMIT=${4:-0}
 
-export RAG_MODEL=gpt-4o-mini
-export EVAL_MODEL=gpt-5-mini
+export RAG_MODEL=${RAG_MODEL:-gpt-4o-mini}
 
 case $CMD in
   index)
@@ -17,12 +16,10 @@ case $CMD in
       --device cuda:0
     ;;
   batch)
+    echo "Running $CMD $RAG_MODEL: $DATASET with $WORKERS workers and limit: $LIMIT"
     uv run python scripts/batch_runner.py --dataset "$DATASET" --limit "$LIMIT" --workers "$WORKERS"
     ;;
-  eval)
-    uv run python scripts/eval.py --predictions "results/$DATASET/predictions.jsonl" --workers "$WORKERS"
-    ;;
   *)
-    echo "Usage: $0 [index|batch|eval] [dataset] [workers] [limit]"
+    echo "Usage: $0 [index|batch] [dataset] [workers] [limit]"
     ;;
 esac
