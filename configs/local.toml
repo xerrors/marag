@@ -77,6 +77,19 @@ api_key_env = "SILICONFLOW_API_KEY"
 temperature = 0.3
 max_tokens = 4096
 
+[llm.gemini-3-flash]
+model = "gemini-3-flash-preview"
+base_url = "http://localhost:8317/v1"
+api_key_env = "GEMINI_API_KEY"
+temperature = 0.3
+max_tokens = 4096
+
+[llm.gpt-5-4-mini]
+model = "gpt-5.4"
+base_url = "http://localhost:8317/v1"
+api_key_env = "CLI_PROXY_API_KEY"
+temperature = 0.3
+max_tokens = 4096
 
 # -----------------------------------------------------------------------------
 # Embedding / agent
