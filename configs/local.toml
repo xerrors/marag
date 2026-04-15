@@ -55,39 +55,10 @@ api_key_env = "SILICONFLOW_API_KEY"
 temperature = 0.3
 max_tokens = 16384
 
-[llm.qwen2-5-32b]
-model = "qwen3:32b"
-base_url = "http://172.19.13.7:8080/v1"
-api_key_env = "NO_API_KEY"
-temperature = 0.3
-max_tokens = 8192
-
-# Qwen/Qwen3.5-35B-A3B
-[llm.qwen-3-5-35b-a3b]
-model = "Qwen/Qwen3.5-35B-A3B"
-base_url = "https://api.siliconflow.cn/v1"
-api_key_env = "SILICONFLOW_API_KEY"
-temperature = 0.3
-max_tokens = 4096
-
-[llm.debug]
-model = "Pro/zai-org/GLM-5.1"
-base_url = "https://api.siliconflow.cn/v1"
-api_key_env = "SILICONFLOW_API_KEY"
-temperature = 0.3
-max_tokens = 4096
-
-[llm.gemini-3-flash]
-model = "gemini-3-flash-preview"
-base_url = "http://localhost:8317/v1"
-api_key_env = "GEMINI_API_KEY"
-temperature = 0.3
-max_tokens = 4096
-
-[llm.gpt-5-4-mini]
-model = "gpt-5.4"
-base_url = "http://localhost:8317/v1"
-api_key_env = "CLI_PROXY_API_KEY"
+[llm.qwen3-5-27b]
+model = "qwen3.5-27b"
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+api_key_env = "DASHSCOPE_API_KEY"
 temperature = 0.3
 max_tokens = 4096
 
@@ -114,13 +85,11 @@ verbose = false
 chunks_file = "data/musique/chunks.json"
 questions_file = "data/musique/questions.json"
 index_dir = "data/musique/index"
-output_dir = "results/musique"
 
 [data.hotpotqa]
 chunks_file = "data/hotpotqa/chunks.json"
 questions_file = "data/hotpotqa/questions.json"
 index_dir = "data/hotpotqa/index"
-output_dir = "results/hotpotqa"
 
 [data.2wikimultihop]
 chunks_file = "data/2wikimultihop/chunks.json"
@@ -132,10 +101,13 @@ output_dir = "results/2wikimultihop"
 chunks_file = "data/novel/chunks.json"
 questions_file = "data/novel/questions.json"
 index_dir = "data/novel/index"
-output_dir = "results/novel"
+
+[data.mix]
+chunks_file = "data/mix/chunks.json"
+questions_file = "data/mix/questions.json"
+index_dir = "data/mix/index"
 
 [data.demo]
 chunks_file = "data/demo/chunks.json"
 questions_file = "data/demo/questions.json"
 index_dir = "data/demo/index"
-output_dir = "results/demo"

@@ -52,10 +52,11 @@ class BatchRunner:
         self.data = config["data"][dataset]
 
         output_name = os.environ.get("RAG_MODEL", "default")
-        output_suffix = os.environ.get("ARAG_OUTPUT_SUFFIX", "").strip()
-        if output_suffix:
+        if output_suffix := os.environ.get("ARAG_OUTPUT_SUFFIX", "").strip():
             output_name = f"{output_name}-{output_suffix}"
-        self.output_dir = Path(self.data["output_dir"]) / output_name
+
+        output_dir_base = os.environ.get("ARAG_OUTPUT_DIR", "results")
+        self.output_dir = Path(output_dir_base) / dataset / output_name
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.limit = limit
         self.num_workers = num_workers
@@ -80,27 +81,29 @@ class BatchRunner:
         """Initialize shared tools (embedding model loaded only once)."""
         chunks_file = self.data["chunks_file"]
         index_dir = self.data["index_dir"]
+        index_file = Path(index_dir) / "sentence_index.pkl"
+
+        if not index_file.exists():
+            raise FileNotFoundError(
+                f"Required semantic index file not found: {index_file}. "
+                "Please build the index first (e.g., run scripts/build_index.py)."
+            )
 
         tools = ToolRegistry()
         tools.register(KeywordSearchTool(chunks_file=chunks_file))
         tools.register(ReadChunkTool(chunks_file=chunks_file))
 
-        # Add semantic search if index exists
-        index_file = Path(index_dir) / "sentence_index.pkl"
-        if index_file.exists():
-            embedding = self.config["embedding"]
-            print(f"Loading embedding model: {embedding['model']}")
-            tools.register(
-                SemanticSearchTool(
-                    chunks_file=chunks_file,
-                    index_dir=index_dir,
-                    model_name=embedding["model"],
-                    device=embedding.get("device"),
-                )
+        embedding = self.config["embedding"]
+        print(f"Loading embedding model: {embedding['model']}")
+        tools.register(
+            SemanticSearchTool(
+                chunks_file=chunks_file,
+                index_dir=index_dir,
+                model_name=embedding["model"],
+                device=embedding.get("device"),
             )
-            print("Embedding model loaded successfully!")
-        else:
-            print(f"Warning: Index not found at {index_file}, semantic search disabled")
+        )
+        print("Embedding model loaded successfully!")
 
         return tools
 

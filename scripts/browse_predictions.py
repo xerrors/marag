@@ -10,6 +10,7 @@ Usage: python browse_predictions.py <predictions.jsonl>
 """
 
 import json
+import re
 import sys
 import os
 
@@ -62,9 +63,14 @@ def wrap(text: str, width: int = 76) -> list[str]:
 
 
 def highlight_text(text: str, gold: str) -> str:
-    """如果 gold 出现在 text 中，高亮显示（绿色）"""
-    if gold and text and gold in text:
-        return text.replace(gold, f"{Colors.GREEN}{gold}{Colors.RESET}")
+    """如果 gold 出现在 text 中（大小写不敏感），高亮显示（绿色）"""
+    if gold and text:
+        return re.sub(
+            re.escape(gold),
+            lambda m: f"{Colors.GREEN}{m.group(0)}{Colors.RESET}",
+            text,
+            flags=re.IGNORECASE,
+        )
     return text
 
 
