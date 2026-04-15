@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from threading import Lock
 
+import pytest
+
 
 def load_batch_runner_class():
     module_path = Path(__file__).resolve().parents[1] / "scripts" / "batch_runner.py"
@@ -75,3 +77,40 @@ def test_append_prediction_skips_error_records(tmp_path):
         json.dumps({"qid": "ok", "question": "q1", "pred_answer": "final"}, ensure_ascii=False)
         + "\n"
     )
+
+
+def test_init_shared_tools_raises_when_sentence_index_missing(tmp_path, monkeypatch):
+    class DummyRegistry:
+        def __init__(self):
+            self.items = []
+
+        def register(self, tool):
+            self.items.append(tool)
+
+    class DummyKeywordTool:
+        def __init__(self, chunks_file):
+            self.chunks_file = chunks_file
+
+    class DummyReadChunkTool:
+        def __init__(self, chunks_file):
+            self.chunks_file = chunks_file
+
+    class DummySemanticTool:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    globals_map = BatchRunner._init_shared_tools.__globals__
+    monkeypatch.setitem(globals_map, "ToolRegistry", DummyRegistry)
+    monkeypatch.setitem(globals_map, "KeywordSearchTool", DummyKeywordTool)
+    monkeypatch.setitem(globals_map, "ReadChunkTool", DummyReadChunkTool)
+    monkeypatch.setitem(globals_map, "SemanticSearchTool", DummySemanticTool)
+
+    runner = BatchRunner.__new__(BatchRunner)
+    runner.data = {
+        "chunks_file": str(tmp_path / "chunks.json"),
+        "index_dir": str(tmp_path / "index"),
+    }
+    runner.config = {"embedding": {"model": "dummy-model", "device": "cpu"}}
+
+    with pytest.raises(FileNotFoundError, match=r"sentence_index\.pkl"):
+        runner._init_shared_tools()
