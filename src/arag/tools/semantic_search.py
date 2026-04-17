@@ -7,6 +7,7 @@ import threading
 from typing import Any, TYPE_CHECKING
 
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 from arag.tools.base import BaseTool
 from arag.tools.graph_utils import (
@@ -27,14 +28,6 @@ try:
 except ImportError:
     HAS_TIKTOKEN = False
 
-try:
-    from sentence_transformers import SentenceTransformer
-
-    HAS_SENTENCE_TRANSFORMERS = True
-except ImportError:
-    HAS_SENTENCE_TRANSFORMERS = False
-
-
 class SemanticSearchTool(BaseTool):
     """Semantic search using embedding similarity."""
 
@@ -48,11 +41,6 @@ class SemanticSearchTool(BaseTool):
         model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         device: str = None,
     ):
-        if not HAS_SENTENCE_TRANSFORMERS:
-            raise ImportError(
-                "sentence-transformers required. Install: pip install sentence-transformers"
-            )
-
         if not HAS_TIKTOKEN:
             raise ImportError("tiktoken required. Install: pip install tiktoken")
 

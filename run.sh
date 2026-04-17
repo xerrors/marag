@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
-export $(cat .env | grep -v '^#' | xargs)
+set -a
+source .env
+set +a
 
 CMD=${1:-batch}
 DATASET=${2:-demo}

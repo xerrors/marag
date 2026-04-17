@@ -59,8 +59,7 @@ class BaseAgent:
                 print(f"Forced answer: {final_answer[:200]}...")
                 print(f"Total cost: ${total_cost:.6f}")
         except Exception as e:
-            if self.verbose:
-                print(f"Error getting forced answer: {e}")
+            print(f"Error getting forced answer: {e}")
             final_answer = f"Error: {reason} and failed to generate final answer."
 
         return final_answer, total_cost
@@ -113,16 +112,21 @@ class BaseAgent:
             try:
                 response = self.llm.chat(messages=messages, tools=tool_schemas)
             except Exception as e:
-                if self.verbose:
-                    print(f"LLM error: {e}")
+                print(f"LLM error: {e}")
                 break
 
             total_cost += response["cost"]
             message = response["message"]
             messages.append(message)
 
-            if self.verbose and message.get("content"):
-                print(f"Assistant: {message['content'][:200]}...")
+            if message.get("content"):
+                trajectory.append({
+                    "loop": loop_count,
+                    "type": "assistant",
+                    "content": message["content"],
+                })
+                if self.verbose:
+                    print(f"Assistant: {message['content'][:200]}...")
 
             tool_calls = message.get("tool_calls")
             if not tool_calls:

@@ -107,6 +107,11 @@ chunks_file = "data/mix/chunks.json"
 questions_file = "data/mix/questions.json"
 index_dir = "data/mix/index"
 
+[data.medical]
+chunks_file = "data/medical/chunks.json"
+questions_file = "data/medical/questions.json"
+index_dir = "data/medical/index"
+
 [data.demo]
 chunks_file = "data/demo/chunks.json"
 questions_file = "data/demo/questions.json"
